@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Controle Financeiro Inteligente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Bibliotecas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --card-color: #fff;
+      --input-bg: #fff;
+      --border-color: #ccc;
+    }
+
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #eee;
+      --card-color: #1e1e1e;
+      --input-bg: #333;
+      --border-color: #555;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      transition: 0.3s ease;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background-color: var(--card-color);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .section {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: var(--input-bg);
+      color: var(--text-color);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 15px;
+      background-color: #008cff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #0072cc;
+    }
+
+    canvas {
+      margin-top: 30px;
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      max-width: 100%;
+    }
+
+    .resumo {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 30px;
+    }
+
+    .alerta { color: red; font-weight: bold; }
+    .ok { color: green; font-weight: bold; }
+    .medio { color: orange; font-weight: bold; }
+    .dark-toggle { float: right; }
+    .dark-toggle span { margin-left: 5px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="dark-toggle">
+      <button onclick="toggleTheme()">🌓 Tema <span id="temaStatus">Light</span></button>
+    </div>
+
+    <h1>Controle Financeiro Inteligente</h1>
+
+    <div class="section">
+      <label>Renda Mensal (R$)</label>
+      <input type="number" id="renda" placeholder="Ex: 3500">
+    </div>
+
+    <div class="section">
+      <label>Meta de Economia (R$)</label>
+      <input type="number" id="meta" placeholder="Ex: 500">
+    </div>
+
+    <div class="section">
+      <label>Cartões</label>
+      <div id="cartoes"></div>
+      <button onclick="addCartao()">+ Adicionar Cartão</button>
+    </div>
+
+    <div class="section">
+      <label>Empréstimos</label>
+      <div id="emprestimos"></div>
+      <button onclick="addEmprestimo()">+ Adicionar Empréstimo</button>
+    </div>
+
+    <div class="section">
+      <label>Gastos Fixos</label>
+      <div class="grid">
+        <input type="text" id="fixoTipo" placeholder="Tipo de gasto">
+        <input type="number" id="fixoValor" placeholder="Valor">
+      </div>
+    </div>
+
+    <div class="section">
+      <label>Lazer</label>
+      <div class="grid">
+        <input type="text" id="lazer" placeholder="Descrição">
+        <input type="number" id="lazerValor" placeholder="Valor">
+      </div>
+    </div>
+
+    <button onclick="analisarResumo()">Analisar</button>
+    <button onclick="exportarPDF()">Exportar PDF</button>
+    <button onclick="exportarExcel()">Exportar Excel</button>
+
+    <div class="resumo" id="painelResumo" style="display:none;"></div>
+    <canvas id="graficoPizza"></canvas>
+    <canvas id="graficoBarras"></canvas>
+  </div>
+
+  <script>
+    let tema = localStorage.getItem('theme') || 'light';
+    if (tema === 'dark') document.body.classList.add('dark');
+    document.getElementById('temaStatus').textContent = tema.charAt(0).toUpperCase() + tema.slice(1);
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      const novoTema = document.body.classList.contains('dark') ? 'dark' : 'light';
+      localStorage.setItem('theme', novoTema);
+      document.getElementById('temaStatus').textContent = novoTema.charAt(0).toUpperCase() + novoTema.slice(1);
+    }
+
+    function addCartao() {
+      const container = document.getElementById('cartoes');
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <div class="grid">
+          <input type="text" placeholder="Nome do cartão">
+          <input type="number" placeholder="Fatura (R$)" class="cartaoValor">
+        </div>`;
+      container.appendChild(div);
+    }
+
+    function addEmprestimo() {
+      const container = document.getElementById('emprestimos');
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <div class="grid">
+          <input type="text" placeholder="Descrição">
+          <input type="number" placeholder="Valor Total" class="valorEmprestimo">
+        </div>
+        <div class="grid">
+          <input type="number" placeholder="Parcelas pendentes">
+          <input type="number" placeholder="Total de parcelas">
+        </div>`;
+      container.appendChild(div);
+    }
+
+    function analisarResumo() {
+      const renda = parseFloat(document.getElementById('renda').value) || 0;
+      const meta = parseFloat(document.getElementById('meta').value) || 0;
+
+      const cartoes = Array.from(document.getElementsByClassName('cartaoValor'));
+      const emprestimos = Array.from(document.getElementsByClassName('valorEmprestimo'));
+
+      const faturaTotal = cartoes.reduce((acc, el) => acc + (parseFloat(el.value) || 0), 0);
+      const emprestimoTotal = emprestimos.reduce((acc, el) => acc + (parseFloat(el.value) || 0), 0);
+
+      const fixo = parseFloat(document.getElementById('fixoValor').value) || 0;
+      const lazer = parseFloat(document.getElementById('lazerValor').value) || 0;
+
+      const total = faturaTotal + emprestimoTotal + fixo + lazer;
+      const sobra = renda - total;
+
+      let status = '', dica = '';
+
+      if (!renda) {
+        status = '<span class="alerta">Informe a renda para análise.</span>';
+        dica = 'Preencha a sua renda mensal.';
+      } else if (sobra >= meta) {
+        status = '<span class="ok">Financeiramente saudável ✅</span>';
+        dica = 'Você está dentro da sua meta. Continue assim!';
+      } else if (sobra >= 0) {
+        status = '<span class="medio">Situação apertada ⚠️</span>';
+        dica = 'Reduza gastos para atingir sua meta de economia. Avalie gastos fixos e de lazer. Veja se há cartões com juros altos e renegocie se possível.';
+      } else {
+        status = '<span class="alerta">Situação crítica ❌</span>';
+        dica = 'Seus gastos superam a renda. Reveja gastos fixos e cortes imediatos em lazer. Considere consolidar dívidas de cartões e buscar ajuda financeira para replanejar.';
+      }
+
+      const resumo = document.getElementById('painelResumo');
+      resumo.innerHTML = `
+        <h3>Resumo Financeiro</h3>
+        <p><strong>Gastos totais:</strong> R$ ${total.toFixed(2)}</p>
+        <p><strong>Renda mensal:</strong> R$ ${renda.toFixed(2)}</p>
+        <p><strong>Sobra estimada:</strong> R$ ${sobra.toFixed(2)}</p>
+        <p><strong>Status:</strong> ${status}</p>
+        <p><strong>Dica:</strong> ${dica}</p>
+      `;
+      resumo.style.display = 'block';
+
+      atualizarGraficos(faturaTotal, emprestimoTotal, fixo, lazer);
+    }
+
+    function atualizarGraficos(fatura, emprestimos, fixo, lazer) {
+      const ctxPizza = document.getElementById('graficoPizza').getContext('2d');
+      const ctxBarras = document.getElementById('graficoBarras').getContext('2d');
+
+      new Chart(ctxPizza, {
+        type: 'pie',
+        data: {
+          labels: ['Cartões', 'Empréstimos', 'Fixos', 'Lazer'],
+          datasets: [{
+            data: [fatura, emprestimos, fixo, lazer],
+            backgroundColor: ['#007bff', '#dc3545', '#ffc107', '#28a745']
+          }]
+        }
+      });
+
+      new Chart(ctxBarras, {
+        type: 'bar',
+        data: {
+          labels: ['Cartões', 'Empréstimos', 'Fixos', 'Lazer'],
+          datasets: [{
+            label: 'Despesas',
+            data: [fatura, emprestimos, fixo, lazer],
+            backgroundColor: '#17a2b8'
+          }]
+        }
+      });
+    }
+
+    function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const resumo = document.getElementById('painelResumo').innerText;
+      doc.text(resumo, 10, 10);
+      doc.save('resumo-financeiro.pdf');
+    }
+
+    function exportarExcel() {
+      const wb = XLSX.utils.book_new();
+      const ws_data = [['Categoria', 'Valor']];
+      const cartoes = Array.from(document.getElementsByClassName('cartaoValor'));
+      const emprestimos = Array.from(document.getElementsByClassName('valorEmprestimo'));
+      const faturaTotal = cartoes.reduce((acc, el) => acc + (parseFloat(el.value) || 0), 0);
+      const emprestimoTotal = emprestimos.reduce((acc, el) => acc + (parseFloat(el.value) || 0), 0);
+      const fixo = parseFloat(document.getElementById('fixoValor').value) || 0;
+      const lazer = parseFloat(document.getElementById('lazerValor').value) || 0;
+
+      ws_data.push(['Cartões', faturaTotal]);
+      ws_data.push(['Empréstimos', emprestimoTotal]);
+      ws_data.push(['Fixos', fixo]);
+      ws_data.push(['Lazer', lazer]);
+
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      XLSX.utils.book_append_sheet(wb, ws, 'Resumo');
+      XLSX.writeFile(wb, 'resumo-financeiro.xlsx');
+    }
+  </script>
+</body>
+</html>
