@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel Financeiro Inteligente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡️</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    .hidden { display: none; }
+
+    /* LOGIN */
+    .login-container {
+      background: #1e1e1e;
+      border-radius: 15px;
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.2);
+      padding: 30px;
+      width: 100%;
+      max-width: 400px;
+      margin: 50px auto;
+      text-align: center;
+    }
+    .login-container h1 { color: #FFD700; margin-bottom: 20px; }
+    .input-group { margin-bottom: 15px; text-align: left; }
+    .input-group label { display: block; margin-bottom: 5px; color: #FFD700; font-weight: 600; }
+    .input-group input {
+      width: 100%; padding: 10px; border-radius: 8px;
+      border: 1px solid #444; background-color: #222;
+      color: #fff; font-size: 16px;
+    }
+    .input-group input::placeholder {
+      color: #bbb;
+      opacity: 1;
+    }
+    .input-group input:focus {
+      border-color: #FFD700; outline: none;
+      box-shadow: 0 0 5px #FFD700;
+    }
+    .btn {
+      background-color: #FFD700;
+      color: #000;
+      font-weight: bold;
+      padding: 12px;
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .btn:hover { background-color: #e5c100; }
+    .alerta {
+      margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 14px; display: none;
+    }
+    .alerta.error { background-color: #ff4c4c; color: white; display: block; }
+    .alerta.success { background-color: #4caf50; color: white; display: block; }
+
+    /* PAINEL */
+    #painel-section {
+      display: none;
+      max-width: 900px;
+      margin: 20px auto;
+      background: #1e1e1e;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+    }
+    #btnLogout, #btnLimpar {
+      background-color: #ff4c4c;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      cursor: pointer;
+      border: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    #btnLogout:hover, #btnLimpar:hover {
+      background-color: #e04343;
+    }
+    .acoes .btn {
+      background-color: #FFD700;
+      color: #000;
+      font-weight: bold;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 5px 10px 10px 0;
+      font-size: 16px;
+      transition: background 0.3s ease;
+      display: inline-block;
+      min-width: 150px;
+      text-align: center;
+    }
+    .acoes .btn:hover {
+      background-color: #e5c100;
+    }
+    label {
+      font-weight: 600;
+      color: #FFD700;
+    }
+    label input {
+      width: 150px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background-color: #222;
+      color: #fff;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+    label input::placeholder {
+      color: #bbb;
+      opacity: 1;
+    }
+    label input:focus {
+      border-color: #FFD700;
+      outline: none;
+      box-shadow: 0 0 5px #FFD700;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 16px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 10px;
+      text-align: center;
+      color: #fff;
+    }
+    th {
+      background-color: #333;
+    }
+    .valor-parcela {
+      font-weight: bold;
+      color: #FFD700;
+    }
+    .barra {
+      height: 20px;
+      background-color: #333;
+      margin-top: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .progresso {
+      height: 100%;
+      background-color: #FFD700;
+      width: 0%;
+      transition: width 0.5s;
+    }
+    #resumo {
+      margin-top: 15px;
+      font-size: 18px;
+      line-height: 1.5;
+      white-space: pre-line;
+      color: #fff;
+      font-weight: 600;
+    }
+    #alerta {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 16px;
+      white-space: pre-line;
+      font-weight: 700;
+    }
+    #alerta.error {
+      background-color: #ff4c4c;
+      color: #fff;
+      border-left: 8px solid #f00;
+    }
+    #alerta.warning {
+      background-color: #FFA500;
+      color: #fff;
+      border-left: 8px solid #ff8c00;
+    }
+    #alerta.success {
+      background-color: #32CD32;
+      color: #000;
+      border-left: 8px solid #228B22;
+    }
+    canvas {
+      display: block;
+      margin: 30px auto 0 auto;
+      max-width: 350px;
+      max-height: 350px;
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 15px;
+      }
+      .login-container {
+        margin: 20px auto;
+        padding: 25px;
+      }
+      #painel-section {
+        margin: 15px auto;
+        padding: 20px;
+      }
+      table {
+        font-size: 14px;
+      }
+      canvas {
+        max-width: 250px;
+        max-height: 250px;
+      }
+      label input {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="login-section" class="login-container">
+    <h1>🔐 Painel Financeiro Inteligente</h1>
+    <div class="input-group">
+      <label for="login-usuario">👤 Usuário</label>
+      <input type="text" id="login-usuario" placeholder="Digite seu usuário" autocomplete="username" />
+    </div>
+    <div class="input-group">
+      <label for="login-senha">🔒 Senha</label>
+      <input type="password" id="login-senha" placeholder="Digite sua senha" autocomplete="current-password" />
+    </div>
+    <button class="btn" onclick="login()">Entrar</button>
+    <div class="alerta" id="login-alerta"></div>
+    <hr style="margin: 20px 0; border-color: #444;" />
+    <h2 style="color:#FFD700">Cadastrar novo usuário</h2>
+    <div class="input-group">
+      <label for="cad-usuario">👤 Novo Usuário</label>
+      <input type="text" id="cad-usuario" placeholder="Escolha um nome de usuário" autocomplete="username" />
+    </div>
+    <div class="input-group">
+      <label for="cad-senha">🔒 Nova Senha</label>
+      <input type="password" id="cad-senha" placeholder="Crie uma senha" autocomplete="new-password" />
+    </div>
+    <button class="btn" onclick="cadastrar()">Cadastrar</button>
+    <div class="alerta" id="cad-alerta"></div>
+  </div>
+
+  <!-- PAINEL -->
+  <div id="painel-section"></div>
+
+<script>
+  // Cores distintas para o gráfico, ciclo infinito para muitas dívidas
+  const coresGrafico = [
+    '#FFD700', '#FF6347', '#ADFF2F', '#1E90FF', '#FF69B4', '#40E0D0', '#FF8C00', '#8A2BE2', '#00FA9A', '#DC143C'
+  ];
+
+  // Controle de usuários e sessão
+  function pegarUsuarios() {
+    return JSON.parse(localStorage.getItem('usuarios') || '{}');
+  }
+  function salvarUsuarios(usuarios) {
+    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+  }
+
+  // Cadastro de usuário
+  function cadastrar() {
+    const usuario = document.getElementById('cad-usuario').value.trim();
+    const senha = document.getElementById('cad-senha').value.trim();
+    const alerta = document.getElementById('cad-alerta');
+
+    if (!usuario || !senha) {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Preencha usuário e senha para cadastro.';
+      return;
+    }
+
+    let usuarios = pegarUsuarios();
+    if (usuarios[usuario]) {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Usuário já existe. Escolha outro.';
+      return;
+    }
+
+    usuarios[usuario] = senha; // Senha em texto puro (simplificado)
+    salvarUsuarios(usuarios);
+    alerta.className = 'alerta success';
+    alerta.innerText = 'Usuário cadastrado com sucesso! Agora faça login.';
+
+    // Limpar campos
+    document.getElementById('cad-usuario').value = '';
+    document.getElementById('cad-senha').value = '';
+  }
+
+  // Login
+  function login() {
+    const usuario = document.getElementById('login-usuario').value.trim();
+    const senha = document.getElementById('login-senha').value.trim();
+    const alerta = document.getElementById('login-alerta');
+
+    if (!usuario || !senha) {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Preencha usuário e senha para entrar.';
+      return;
+    }
+
+    const usuarios = pegarUsuarios();
+    if (usuarios[usuario] && usuarios[usuario] === senha) {
+      alerta.className = 'alerta success';
+      alerta.innerText = 'Login realizado com sucesso!';
+      localStorage.setItem('usuarioLogado', usuario);
+      mostrarPainel();
+    } else {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Usuário ou senha incorretos.';
+    }
+  }
+
+  // Mostrar painel financeiro
+  function mostrarPainel() {
+    document.getElementById('login-section').style.display = 'none';
+    const painel = document.getElementById('painel-section');
+    painel.style.display = 'block';
+    painel.innerHTML = `
+      <button id="btnLogout" onclick="logout()">Sair</button>
+      <button id="btnLimpar" onclick="limparTudo()">Limpar Tudo</button>
+      <h1 style="color:#FFD700">Painel Financeiro</h1>
+      <label>💰 Renda mensal: R$ <input type="number" id="renda" step="0.01" placeholder="Ex: 2500.00"></label><br><br>
+      <label>💸 Pagamento mensal possível: R$ <input type="number" id="pagamento" step="0.01" placeholder="Ex: 800.00"></label><br><br>
+      <div class="acoes">
+        <button class="btn" onclick="adicionarLinha()">+ Adicionar Dívida</button>
+        <button class="btn" onclick="analisar()">Analisar Situação</button>
+        <button class="btn" onclick="exportarPDF()">📄 Exportar PDF</button>
+      </div>
+      <table id="tabela-dividas">
+        <thead><tr><th>Tipo</th><th>Valor Total (R$)</th><th>Parcelas</th><th>Valor Parcela</th><th>Ação</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="barra"><div class="progresso" id="progresso"></div></div>
+      <div id="alerta"></div>
+      <div id="resumo" style="margin-top:10px;"></div>
+      <canvas id="grafico"></canvas>
+    `;
+    carregarDadosUsuario();
+    analisar();
+  }
+
+  // Logout
+  function logout() {
+    localStorage.removeItem('usuarioLogado');
+    location.reload();
+  }
+
+  // Limpar tudo (painel)
+  function limparTudo() {
+    if (confirm("Quer mesmo limpar TODOS os dados deste usuário?")) {
+      const usuario = localStorage.getItem('usuarioLogado');
+      if (usuario) {
+        localStorage.removeItem(`dados_${usuario}`);
+        mostrarPainel();
+      }
+    }
+  }
+
+  // Adicionar linha de dívida
+  function adicionarLinha(tipo = '', valorTotal = '', parcelas = '') {
+    const tbody = document.querySelector('#tabela-dividas tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="tipo" placeholder="Ex: Cartão Nubank" value="${tipo}"></td>
+      <td><input class="valor-total" type="number" step="0.01" placeholder="Ex: 1200.00" value="${valorTotal}"></td>
+      <td><input class="parcelas" type="number" min="1" placeholder="Ex: 12" value="${parcelas}"></td>
+      <td class="valor-parcela">R$ 0,00</td>
+      <td><button class="btn" onclick="removerLinha(this)">Remover</button></td>`;
+    tbody.appendChild(tr);
+    tr.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', () => {
+        salvarDadosUsuario();
+        analisar();
+      });
+    });
+    salvarDadosUsuario();
+    analisar();
+  }
+
+  // Remover linha
+  function removerLinha(botao) {
+    botao.closest('tr').remove();
+    salvarDadosUsuario();
+    analisar();
+  }
+
+  // Função para mostrar dicas se a situação estiver crítica
+  function mostrarDicas(percentual, sobra, totalParcelas, pagamento, renda) {
+    let dicasHTML = '';
+
+    if (percentual >= 80 || sobra < 0 || totalParcelas > pagamento) {
+      dicasHTML += `<h3 style="color:#FFD700;">💡 Dicas para respirar e reorganizar:</h3>`;
+      dicasHTML += `<ul style="text-align:left; margin-left:20px; font-size: 16px; color:#fff;">`;
+
+      if (percentual >= 80) {
+        dicasHTML += `<li>🔸 Priorize pagar as dívidas com juros mais altos (como cartão de crédito e cheque especial).</li>`;
+        dicasHTML += `<li>🔸 Suspenda novos parcelamentos e evite compras no crédito.</li>`;
+        dicasHTML += `<li>🔸 Negocie descontos e condições melhores com seus credores.</li>`;
+      }
+
+      if (sobra < 0) {
+        dicasHTML += `<li>🔸 Reveja gastos fixos e corte o que for possível (assinaturas, lazer, supérfluos).</li>`;
+        dicasHTML += `<li>🔸 Considere renda extra temporária para aumentar o caixa.</li>`;
+        dicasHTML += `<li>🔸 Busque empréstimos com juros menores para consolidar dívidas, se for vantajoso.</li>`;
+      }
+
+      if (totalParcelas > pagamento) {
+        dicasHTML += `<li>🔸 Ajuste o valor de pagamento mensal para que não ultrapasse o que você pode pagar.</li>`;
+        dicasHTML += `<li>🔸 Priorize dívidas menores para liberar espaço financeiro rápido.</li>`;
+      }
+
+      dicasHTML += `<li>🔸 Mantenha controle diário e registre cada gasto para não perder o foco.</li>`;
+      dicasHTML += `</ul>`;
+    } else {
+      dicasHTML = `<p style="color:#32CD32; font-weight: 600;">Sua situação está equilibrada! Continue mantendo disciplina e planejamento financeiro.</p>`;
+    }
+
+    // Inserir no resumo ou criar um container específico
+    const resumo = document.getElementById('resumo');
+    resumo.innerHTML += `<div id="dicas-financeiras" style="margin-top:15px; background:#222; padding:15px; border-radius:10px;">${dicasHTML}</div>`;
+  }
+
+  // Analisar situação financeira
+  function analisar() {
+    const renda = parseFloat(document.getElementById('renda').value) || 0;
+    const pagamento = parseFloat(document.getElementById('pagamento').value) || 0;
+    let totalParcelas = 0, labels = [], dados = [], parcelasTotal = 0;
+
+    document.querySelectorAll('#tabela-dividas tbody tr').forEach(tr => {
+      const tipo = tr.querySelector('.tipo').value.trim() || 'Não informado';
+      const valorTotal = parseFloat(tr.querySelector('.valor-total').value) || 0;
+      const parcelas = parseInt(tr.querySelector('.parcelas').value) || 1;
+      const valorParcela = valorTotal / parcelas;
+      parcelasTotal += parcelas;
+
+      tr.querySelector('.valor-parcela').innerText = 'R$ ' + valorParcela.toFixed(2);
+
+      totalParcelas += valorParcela;
+      labels.push(tipo);
+      dados.push(valorParcela);
+    });
+
+    const percentual = renda ? (totalParcelas / renda) * 100 : 0;
+    const sobra = renda - totalParcelas;
+
+    // Atualiza barra de progresso
+    document.getElementById("progresso").style.width = Math.min(100, percentual) + "%";
+
+    // Alerta com cores e mensagens
+    const alertaFinal = document.getElementById('alerta');
+    alertaFinal.style.borderLeft = '8px solid';
+
+    if (percentual >= 80) {
+      alertaFinal.className = 'alerta error';
+      alertaFinal.innerText = "⚠️ Renda altamente comprometida! Evite novos parcelamentos.";
+    } else if (percentual >= 50) {
+      alertaFinal.className = 'alerta warning';
+      alertaFinal.innerText = "🔶 Cuidado! Mais da metade da sua renda está comprometida.";
+    } else {
+      alertaFinal.className = 'alerta success';
+      alertaFinal.innerText = "✅ Sua situação está sob controle. Mantenha o foco!";
+    }
+
+    if (totalParcelas > pagamento) {
+      alertaFinal.innerText += "\n❌ Você está pagando mais do que pode por mês!";
+    }
+    if (sobra < 0) {
+      alertaFinal.innerText += "\n🚨 Sua renda não cobre os pagamentos mensais!";
+    }
+
+    // Resumo financeiro
+    document.getElementById('resumo').innerHTML = `
+      <strong>Total de parcelas mensais:</strong> R$ ${totalParcelas.toFixed(2)}<br>
+      <strong>Total de parcelas restantes:</strong> ${parcelasTotal}<br>
+      <strong>Percentual da renda comprometida:</strong> ${percentual.toFixed(2)}%<br>
+      <strong>Sobra da renda:</strong> R$ ${sobra.toFixed(2)}
+    `;
+
+    // Mostra dicas inteligentes
+    mostrarDicas(percentual, sobra, totalParcelas, pagamento, renda);
+
+    // Cores para gráfico pizza, ciclo infinito
+    const backgroundColors = [];
+    for (let i = 0; i < dados.length; i++) {
+      backgroundColors.push(coresGrafico[i % coresGrafico.length]);
+    }
+
+    // Renderiza gráfico pizza
+    const ctx = document.getElementById("grafico").getContext("2d");
+    if (window.chart) window.chart.destroy();
+    window.chart = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Valores",
+          data: dados,
+          backgroundColor: backgroundColors
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#fff' }
+          }
+        }
+      }
+    });
+
+    salvarDadosUsuario();
+  }
+
+  // Salvar dados do usuário no localStorage
+  function salvarDadosUsuario() {
+    const usuario = localStorage.getItem('usuarioLogado');
+    if (!usuario) return;
+
+    const renda = document.getElementById('renda').value;
+    const pagamento = document.getElementById('pagamento').value;
+    const dividas = [];
+
+    document.querySelectorAll('#tabela-dividas tbody tr').forEach(tr => {
+      const tipo = tr.querySelector('.tipo').value;
+      const valorTotal = tr.querySelector('.valor-total').value;
+      const parcelas = tr.querySelector('.parcelas').value;
+      dividas.push({ tipo, valorTotal, parcelas });
+    });
+
+    const dados = { renda, pagamento, dividas };
+    localStorage.setItem(`dados_${usuario}`, JSON.stringify(dados));
+  }
+
+  // Carregar dados do usuário
+  function carregarDadosUsuario() {
+    const usuario = localStorage.getItem('usuarioLogado');
+    if (!usuario) return;
+
+    const dados = JSON.parse(localStorage.getItem(`dados_${usuario}`) || '{}');
+    if (!dados) return;
+
+    document.getElementById('renda').value = dados.renda || '';
+    document.getElementById('pagamento').value = dados.pagamento || '';
+
+    // Limpar tabela antes de carregar
+    const tbody = document.querySelector('#tabela-dividas tbody');
+    tbody.innerHTML = '';
+
+    if (dados.dividas && dados.dividas.length > 0) {
+      dados.dividas.forEach(d => {
+        adicionarLinha(d.tipo, d.valorTotal, d.parcelas);
+      });
+    }
+  }
+
+  // Exportar PDF
+  function exportarPDF() {
+    const painel = document.getElementById('painel-section');
+    const opt = {
+      margin:       0.5,
+      filename:     'Painel_Financeiro_Inteligente.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(painel).save();
+  }
+
+  // Inicialização
+  window.onload = () => {
+    const usuario = localStorage.getItem('usuarioLogado');
+    if (usuario) {
+      mostrarPainel();
+    }
+  };
+</script>
+
+</body>
+</html>
