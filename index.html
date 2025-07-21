@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+    <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js"></script>
+
+  <!-- Firebase Config -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB52ErqMQGfL5eWbasN9_sv8zAcCOPsLR4",
+      authDomain: "cfi-smart.firebaseapp.com",
+      projectId: "cfi-smart",
+      storageBucket: "cfi-smart.firebasestorage.app",
+      messagingSenderId: "67048661406",
+      appId: "1:67048661406:web:b70ae7a0c9a8adfd36b68f"
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
+
+  <style>
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>📊​ Painel Financeiro Inteligente</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22></text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    .titulo-com-botao {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30px;
+  flex-wrap: wrap;
+}
+
+.titulo-com-botao h2 {
+  color: #ffffff;
+  font-size: 30px;
+  margin: 0;
+}
+
+.titulo-com-botao .btn-mini {
+  background-color: #28773a;
+  color: #000;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 12px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.titulo-com-botao .btn-mini:hover {
+  background-color: #28773a;
+}
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #1e1e2f;
+      color: #acacac;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    .hidden { display: none; }
+
+    /* Estilo de login */
+    .login-container {
+      background: #1e1e2f;
+      border-radius: 15px;
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.2);
+      padding: 30px;
+      width: 100%;
+      max-width: 400px;
+      margin: 50px auto;
+      text-align: center;
+    }
+    .login-container h1 { color: #ffffff; margin-bottom: 20px; }
+    .input-group { margin-bottom: 15px; text-align: left; }
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background-color: #ffffff;
+      color: #000000;
+      font-size: 16px;
+    }
+    .input-group input::placeholder {
+      color: #1a1818;
+    }
+    .btn {
+      background-color: #598566;
+      color: #000;
+      font-weight: bold;
+      padding: 10px 16px;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin-top: 5px;
+    }
+    .btn:hover { background-color: #219e78; }
+    .alerta {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    .alerta.error { background-color: #ff4c4c; color: white; display: block; }
+    .alerta.success { background-color: #4caf50; color: white; display: block; }
+
+    /* Painel principal */
+    #painel-section {
+      display: none;
+      max-width: 900px;
+      margin: 20px auto;
+      background: #1e1e2f;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+    }
+
+    #btnLogout, #btnLimpar {
+      background-color: #d9534f;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      cursor: pointer;
+      border: none;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .acoes {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .acoes .btn {
+      width: auto;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    label input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background-color: #ffffff;
+      color: #000000;
+      font-size: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 15px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #333;
+    }
+
+    .valor-parcela {
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .barra {
+      height: 16px;
+      background-color: #333;
+      margin-top: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .progresso {
+      height: 100%;
+      background-color: #FFD700;
+      width: 0%;
+      transition: width 0.5s;
+    }
+
+    #resumo {
+      margin-top: 15px;
+      font-size: 16px;
+      white-space: pre-line;
+    }
+
+    #alerta {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    #alerta.error {
+      background-color: #ff4c4c;
+      color: #fff;
+      border-left: 6px solid #f00;
+    }
+    #alerta.warning {
+      background-color: #FFA500;
+      color: #fff;
+      border-left: 6px solid #ff8c00;
+    }
+    #alerta.success {
+      background-color: #32CD32;
+      color: #000;
+      border-left: 6px solid #228B22;
+    }
+
+    canvas {
+      max-width: 300px;
+      margin: 30px auto 0 auto;
+    }
+
+    #graficos-container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+@media (max-width: 768px) {
+  .titulo-com-botao {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  #painel-section {
+    padding: 15px;
+    margin: 10px auto;
+  }
+
+  .acoes {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .acoes .btn {
+    width: 100%;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  th, td {
+    padding: 10px 12px;
+  }
+  #graficos-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+  }
+  #graficos-container canvas {
+    max-width: 100% !important;
+    max-height: 250px !important;
+    height: auto;
+    box-shadow: none;
+    border-radius: 10px;
+  }
+  #dicas-financeiras {
+    font-size: 18px;
+    max-width: 100%;
+  }
+}
+  </style>
+</head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f0c674">
+<body>
+  <!-- Frase inspiradora no topo -->
+  <div style="display: flex; justify-content: center; align-items: center; margin: 30px 0;">
+    <blockquote style="
+      font-style: italic;
+      color: rgb(236, 232, 0);
+      background-color: #110f2e;
+      padding: 20px;
+      border-left: 5px solid #ffffff;
+      border-radius: 10px;
+      max-width: 800px;
+      width: 90%;
+      margin: 0 auto;
+      animation: fadeIn 2s ease-in-out;
+    ">
+      “Uma parte de tudo que ganhar pertence a você, assim pegue esse tesouro e faça trabalhar para você, façam filhos dele e os filhos dos filhos dele trabalharem para você.”<br>
+      <span style="display: block; margin-top: 15px; text-align: right; font-weight: bold; color: #ccc;">
+        – O Homem Mais Rico da Babilônia
+      </span>
+    </blockquote>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login-section" class="login-container">
+    <h1>🔐 Painel Financeiro Inteligente</h1>
+    <div class="input-group">
+      <label for="login-usuario">👤 Usuário</label>
+      <input type="text" id="login-usuario" placeholder="Digite seu usuário" autocomplete="username" />
+    </div>
+
+    <div class="input-group">
+      <label for="login-senha">🔒 Senha</label>
+      <input type="password" id="login-senha" placeholder="Digite sua senha" autocomplete="current-password" />
+    </div>
+
+    <button class="btn" onclick="login()">Entrar</button>
+    <div class="alerta" id="login-alerta"></div>
+
+    <hr style="margin: 20px 0; border-color: #444;" />
+
+    <h2 style="color:#ffffff">Cadastrar novo usuário</h2>
+
+    <div class="input-group">
+      <label for="cad-usuario">👤 Novo Usuário</label>
+      <input type="text" id="cad-usuario" placeholder="Escolha um nome de usuário" autocomplete="username" />
+    </div>
+
+    <div class="input-group">
+      <label for="cad-senha">🔒 Nova Senha</label>
+      <input type="password" id="cad-senha" placeholder="Crie uma senha" autocomplete="new-password" />
+    </div>
+    <button class="btn" onclick="cadastrar()">Cadastrar</button>
+    <div class="alerta" id="cad-alerta"></div>
+    <hr style="margin: 20px 0; border-color: #444;" />
+    <div class="g-recaptcha" data-sitekey="6LfrrYorAAAAAK4RZ53zO9HmHYCbuDGv-oE8npQx"></div>
+  </div>
+
+  <!-- PAINEL -->
+  <div id="painel-section"></div>
+
+<div id="relatorio-pdf" class="hidden" style="background:#fff; color:#000; padding:30px; max-width:800px;">
+  <h1 style="color:#000000;">📊 Painel Financeiro Inteligente</h1> <!-- Corrigido aqui -->
+  <div id="conteudo-pdf"></div>
+</div>
+</body>
+<script>
+  // Paleta de cores para gráficos
+  const coresGrafico = [
+    '#FFD700', '#FF6347', '#ADFF2F', '#1E90FF', '#FF69B4',
+    '#40E0D0', '#FF8C00', '#8A2BE2', '#00FA9A', '#DC143C'
+  ];
+
+  // --- Controle de usuários e sessão ---
+  function pegarUsuarios() {
+    return JSON.parse(localStorage.getItem('usuarios') || '{}');
+  }
+  function salvarUsuarios(usuarios) {
+    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+  }
+
+  // Cadastro de usuário
+  function cadastrar() {
+    const usuario = document.getElementById('cad-usuario').value.trim();
+    const senha = document.getElementById('cad-senha').value.trim();
+    const alerta = document.getElementById('cad-alerta');
+
+    if (!usuario || !senha) {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Preencha usuário e senha para cadastro.';
+      return;
+    }
+
+    let usuarios = pegarUsuarios();
+    if (usuarios[usuario]) {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Usuário já existe. Escolha outro.';
+      return;
+    }
+
+    usuarios[usuario] = senha; // senha simplificada, em texto puro
+    salvarUsuarios(usuarios);
+    alerta.className = 'alerta success';
+    alerta.innerText = 'Usuário cadastrado com sucesso! Agora faça login.';
+    document.getElementById('cad-usuario').value = '';
+    document.getElementById('cad-senha').value = '';
+  }
+
+  // Login
+  function login() {
+    const usuario = document.getElementById('login-usuario').value.trim();
+    const senha = document.getElementById('login-senha').value.trim();
+    const alerta = document.getElementById('login-alerta');
+
+    if (!usuario || !senha) {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Preencha usuário e senha para entrar.';
+      return;
+    }
+
+    const usuarios = pegarUsuarios();
+    if (usuarios[usuario] && usuarios[usuario] === senha) {
+      alerta.className = 'alerta success';
+      alerta.innerText = 'Login realizado com sucesso!';
+      localStorage.setItem('usuarioLogado', usuario);
+      mostrarPainel();
+    } else {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Usuário ou senha incorretos.';
+    }
+  }
+function resetarSenha() {
+  const email = document.getElementById('reset-email').value;
+  if (!email) {
+    alert('Digite seu e-mail para redefinir a senha.');
+    return;
+  }
+
+  auth.sendPasswordResetEmail(email)
+    .then(() => {
+      alert('📧 Um link para redefinir sua senha foi enviado para o seu e-mail.');
+    })
+    .catch(error => {
+      console.error(error);
+      alert('❌ Erro ao enviar e-mail: ' + error.message);
+    });
+}
+
+  // Mostrar painel financeiro
+  function mostrarPainel() {
+    document.getElementById('login-section').style.display = 'none';
+    const painel = document.getElementById('painel-section');
+    painel.style.display = 'block';
+
+    painel.innerHTML = `
+      <button id="btnLogout" onclick="logout()">Sair</button>
+	  <!-- FILTRO MÊS/ANO -->
+	  <label>Selecione o Mês e Ano:</label>
+	  <input type="month" id="filtroMesAno" onchange="carregarDadosUsuario()" />
+
+      <button id="btnLimpar" onclick="limparTudo()">Limpar Tudo</button>
+
+      <h1 style="color:##f5f5f5"> ​📊​ Painel Financeiro</h1>
+
+      <label>💰 Renda mensal:
+        <input type="number" id="renda" step="0.01" placeholder="Ex: 2500.00" />
+      </label>
+
+      <label>💸 Meta de economia:
+        <input type="number" id="pagamento" step="0.01" placeholder="Ex: 800.00" />
+      </label>
+
+  <button class="btn" onclick="exportarPDF()">📄 Exportar PDF</button>
+  <button class="btn" onclick="salvarDadosUsuario()">💾 Salvar Manualmente</button>
+</div>
+
+<div id="historico-salvo" style="margin-top: 30px;">
+  <h3 style="color: #f5f5f5;">📅 Históricos Salvos:</h3>
+  <ul id="lista-historico"></ul>
+</div>
+
+<div class="titulo-com-botao">
+  <h2>Dívidas</h2>
+  <button class="btn-mini" onclick="adicionarLinhaDivida()">+ Adicionar</button>
+</div>
+      <table id="tabela-dividas">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Valor Total (R$)</th>
+            <th>Parcelas</th>
+            <th>Valor Parcela</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="barra"><div class="progresso" id="progresso-dividas"></div></div>
+
+<div class="titulo-com-botao" style="margin-top: 30px;">
+  <h2>Despesas Mensais</h2>
+  <button class="btn-mini" onclick="adicionarLinhaDespesa()">+ Adicionar</button>
+</div>
+      <table id="tabela-despesas">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Valor Mensal (R$)</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="barra"><div class="progresso" id="progresso-despesas"></div></div>
+      
+      <div id="alerta"></div>
+
+      <div id="resumo" style="margin-top:10px;"></div>
+      <div id="avaliacao-onze" style="margin-top:10px; font-size:18px; color:#FFD700;"></div>
+
+
+      <div id="graficos-container">
+        <canvas id="graficoDividas"></canvas>
+        <canvas id="graficoDespesas"></canvas>
+      </div>
+
+      <div id="dicas-financeiras" style="margin-top:20px; font-size: 16px;"></div>
+    `;
+function getChaveUsuarioMesAno() {
+  const usuario = localStorage.getItem("usuarioLogado");
+  const mesAno = document.getElementById("filtroMesAno")?.value;
+  return `dados_${usuario}_${mesAno}`;
+}
+    carregarDadosUsuario();
+	const carregarDados = async () => {
+	const mesAno = document.getElementById("filtroMesAno").value;
+	
+	const snapshot = await db.collection("usuarios")
+    .doc(usuarioId)
+    .collection("registros")
+    .where("mesAno", "==", mesAno)
+    .get();
+	
+	const despesas = [];
+	const dividas = [];
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    if (data.categoria === "Despesa") despesas.push(data);
+    if (data.categoria === "Dívida") dividas.push(data);
+  });
+
+  atualizarTabela(despesas, "tabela-despesas");
+  atualizarTabela(dividas, "tabela-dividas");
+  gerarGrafico(despesas, "graficoDespesas", "Despesas");
+  gerarGrafico(dividas, "graficoDividas", "Dívidas");
+};
+
+
+    // Eventos para inputs de renda e pagamento dispararem análise automaticamente
+    document.getElementById('renda').addEventListener('input', analisar);
+    document.getElementById('pagamento').addEventListener('input', analisar);
+  }
+
+  // Logout
+function logout() {
+  localStorage.removeItem('usuarioLogado');
+  localStorage.removeItem('filtroMesAno'); // opcional
+  location.reload();
+}
+
+
+  // Limpar dados do usuário logado
+  function limparTudo() {
+    if (confirm("Quer mesmo limpar TODOS os dados deste usuário? Ao fazer isso você irá perder todos os seus dados salvos.")) {
+      const usuario = localStorage.getItem('usuarioLogado');
+      if (usuario) {
+        localStorage.removeItem(`dados_${usuario}`);
+        mostrarPainel();
+      }
+    }
+  }
+
+  // Adicionar linha de dívida
+  function adicionarLinhaDivida(tipo = '', valorTotal = '', parcelas = '') {
+    const tbody = document.querySelector('#tabela-dividas tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="tipo" placeholder="Ex: Cartão Nubank" value="${tipo}"></td>
+      <td><input class="valor-total" type="number" step="0.01" placeholder="Ex: 1200.00" value="${valorTotal}"></td>
+      <td><input class="parcelas" type="number" min="1" placeholder="Ex: 12" value="${parcelas}"></td>
+      <td class="valor-parcela">R$ 0,00</td>
+      <td><button class="btn" onclick="removerLinha(this)">Remover</button></td>`;
+    tbody.appendChild(tr);
+
+    // Adicionar evento para atualizar análise ao digitar
+    tr.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', () => {
+        salvarDadosUsuario();
+        analisar();
+      });
+    });
+
+    salvarDadosUsuario();
+    analisar();
+  }
+
+  // Adicionar linha de despesa
+  function adicionarLinhaDespesa(tipo = '', valorMensal = '') {
+    const tbody = document.querySelector('#tabela-despesas tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="tipo" placeholder="Ex: Luz" value="${tipo}"></td>
+      <td><input class="valor-mensal" type="number" step="0.01" placeholder="Ex: 250.00" value="${valorMensal}"></td>
+      <td><button class="btn" onclick="removerLinha(this)">Remover</button></td>`;
+    tbody.appendChild(tr);
+
+    // Evento para atualizar análise ao digitar
+    tr.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', () => {
+        salvarDadosUsuario();
+        analisar();
+      });
+    });
+
+    salvarDadosUsuario();
+    analisar();
+  }
+
+  // Remover linha (dívida ou despesa)
+  function removerLinha(botao) {
+    botao.closest('tr').remove();
+    salvarDadosUsuario();
+    analisar();
+  }
+
+  // Mostrar dicas conforme a situação
+  function mostrarDicas(percentualDividas, percentualDespesas, sobra, pagamento, renda) {
+    let dicasHTML = '';
+
+    // Alertas para dívidas
+    if (percentualDividas >= 80) {
+      dicasHTML += `<h3 style="color:#FFD700;">💡 Dicas para dívidas:</h3><ul style="text-align:left; margin-left:20px;">`;
+      if (percentualDividas >= 100) {
+        dicasHTML += `<li>🔸 Comprometer mais do que ganha é um sinal de alerta. Renegociar e reorganizar é o primeiro passo para uma vida financeira mais leve e sustentável.</li>`;
+      } else {
+        dicasHTML += `<li>🔸 Evite novos parcelamentos e tente negociar juros para dívidas acima de 80% da renda.</li>`;
+      }
+      dicasHTML += `<li>🔸 Seu orçamento está além do saudável. Reavaliar suas dívidas agora é um passo essencial para recuperar o equilíbrio financeiro e cuidar do seu futuro com mais tranquilidade.”</li></ul>`;
+    }
+
+    // Alertas para despesas
+    if (percentualDespesas >= 60) {
+      dicasHTML += `<h3 style="color:#FFD700;">💡 Dicas para despesas:</h3><ul style="text-align:left; margin-left:30px;">`;
+      dicasHTML += `<li>🔸 Despesas estão acima de 60% da sua renda. Gaste com o que faz sentido, não com o que te distrai..</li>`;
+      dicasHTML += `<li>🔸 Antes de comprar, pergunte: isso é uma necessidade ou só vontade do momento? `;
+      dicasHTML += `<li>🔸 Evite parcelar despesas do dia a dia. Isso gera bola de neve. `
+
+    }
+
+    // Dicas gerais
+    if (sobra < 0 || pagamento < percentualDividas * (renda/100)) {
+      dicasHTML += `<h3 style="color:#FFD700;">💡 Dicas gerais:</h3><ul style="text-align:left; margin-left:30px;">`;
+      dicasHTML += `<li>🔸 Estabeleça um limite de gastos fixos + valor para quitar dívida/despesa todo mês. Use seu painel pra acompanhar mês a mês. Isso ajuda a manter o foco e dá clareza da evolução.</li>`;
+      
+      dicasHTML += `<li>🔸 Pague o que consegue hoje, mas pense no amanhã: sempre que puder, reserve um pouquinho.</li>`;
+      
+      dicasHTML += `<li>🔸 Regra 50/30/20: Separe 50% da renda pra necessidades (moradia, conta), 30% pros seus desejos (lazer, hobbies) e 20% para poupança/quitamento de dívidas/investimentos.`;
+    
+    }
+
+    if (!dicasHTML) {
+      dicasHTML = `<h3 style="color:#FFFFFF;">👍 Parabéns! Seu orçamento está equilibrado.</h3>`;
+    }
+
+    return dicasHTML;
+  }
+
+  // Analisar finanças e atualizar tudo
+  let graficoDividas = null;
+  let graficoDespesas = null;
+
+function analisar() {
+  const renda = parseFloat(document.getElementById('renda').value) || 0;
+  const pagamento = parseFloat(document.getElementById('pagamento').value) || 0;
+
+  const tbodyDividas = document.querySelector('#tabela-dividas tbody');
+  const tbodyDespesas = document.querySelector('#tabela-despesas tbody');
+
+  const alertBox = document.getElementById('alerta');
+  const resumo = document.getElementById('resumo');
+  const progressoDividas = document.getElementById('progresso-dividas');
+  const progressoDespesas = document.getElementById('progresso-despesas');
+  const divDicas = document.getElementById('dicas-financeiras');
+  const avaliacaoOnze = document.getElementById('avaliacao-onze');
+
+  let totalParcelas = 0;
+  let totalDespesas = 0;
+  let detalhesDividas = [];
+  let detalhesDespesas = [];
+
+  tbodyDividas.querySelectorAll('tr').forEach(tr => {
+    const valorTotal = parseFloat(tr.querySelector('.valor-total').value) || 0;
+    const parcelas = parseInt(tr.querySelector('.parcelas').value) || 1;
+    const valorParcela = parcelas > 0 ? valorTotal / parcelas : 0;
+
+    tr.querySelector('.valor-parcela').textContent = 'R$ ' + valorParcela.toFixed(2).replace('.', ',');
+    totalParcelas += valorParcela;
+    detalhesDividas.push({ tipo: tr.querySelector('.tipo').value || 'Sem Tipo', valorParcela });
+  });
+
+  tbodyDespesas.querySelectorAll('tr').forEach(tr => {
+    const valorMensal = parseFloat(tr.querySelector('.valor-mensal').value) || 0;
+    totalDespesas += valorMensal;
+    detalhesDespesas.push({ tipo: tr.querySelector('.tipo').value || 'Sem Tipo', valorMensal });
+  });
+
+  const percentualDividas = renda ? (totalParcelas / renda) * 100 : 0;
+  const percentualDespesas = renda ? (totalDespesas / renda) * 100 : 0;
+  const sobra = renda - totalParcelas - totalDespesas;
+
+  progressoDividas.style.width = Math.min(percentualDividas, 100) + '%';
+  progressoDespesas.style.width = Math.min(percentualDespesas, 100) + '%';
+
+  progressoDividas.style.backgroundColor = percentualDividas >= 100 ? '#FFFFFF' : percentualDividas >= 80 ? '#FFFFFF' : '#FFFFFF';
+  progressoDespesas.style.backgroundColor = percentualDespesas >= 60 ? '#FFFFFF' : '#FFFFFF';
+
+  if (percentualDividas >= 100) {
+    alertBox.className = 'alerta error';
+    alertBox.innerText = ` ⚠️​ Atenção! Você está comprometendo mais de 100% da sua renda com dívidas.`;
+  } else if (percentualDividas >= 80) {
+    alertBox.className = 'alerta warning';
+    alertBox.innerText = ` ⚠️​ Cuidado! Mais de 80% da renda comprometida com dívidas.`;
+  } else {
+    alertBox.className = 'alerta success';
+    alertBox.innerText = ` ⚠️​ Tudo sob controle, dívidas abaixo de 80% da renda.`;
+  }
+
+  let resumoTexto = `Renda Mensal: R$ ${renda.toFixed(2).replace('.', ',')}\n` +
+    `Total em Parcelas de Dívidas: R$ ${totalParcelas.toFixed(2).replace('.', ',')} (${percentualDividas.toFixed(1)}%)\n` +
+    `Total em Despesas Mensais: R$ ${totalDespesas.toFixed(2).replace('.', ',')} (${percentualDespesas.toFixed(1)}%)\n` +
+    `Sobra Mensal Estimada: R$ ${sobra.toFixed(2).replace('.', ',')}`;
+
+  resumo.innerHTML = `<pre style="color:#f5f5f5; white-space: pre-wrap;">${resumoTexto}</pre>`;
+
+  let score = 100;
+  if (percentualDividas >= 100 || percentualDespesas >= 100 || sobra < 0) score = 20;
+  else if (percentualDividas > 80 || percentualDespesas > 70) score = 40;
+  else if (percentualDividas > 60 || percentualDespesas > 50) score = 60;
+  else if (percentualDividas > 30 || percentualDespesas > 30) score = 80;
+
+  const status =
+    score <= 30 ? ' ⚠️​ Situação crítica! Precisamos agir agora.' :
+    score <= 50 ? ' ⚠️​ Atenção! Sua saúde financeira está no limite.' :
+    score <= 70 ? ' 🟡​ Você está no caminho, mas há pontos de atenção.' :
+    score <= 90 ? ' 🟢​ Boa! Seu planejamento está funcionando.' :
+    ' ​✅​ Excelente! Sua saúde financeira está em alta.';
+
+  avaliacaoOnze.innerHTML = `<strong> ​💹​ Saúde Financeira Hoje:</strong><br><span style="color:#FFFFFF">${status}</span>`;
+
+  divDicas.innerHTML = mostrarDicas(percentualDividas, percentualDespesas, sobra, pagamento, renda);
+
+  atualizarGraficos(detalhesDividas, detalhesDespesas);
+}
+
+  // Atualizar gráficos de pizza lado a lado
+  function atualizarGraficos(detalhesDividas, detalhesDespesas) {
+    const ctxDividas = document.getElementById('graficoDividas').getContext('2d');
+    const ctxDespesas = document.getElementById('graficoDespesas').getContext('2d');
+
+    const labelsDividas = detalhesDividas.map(d => d.tipo);
+    const dataDividas = detalhesDividas.map(d => d.valorParcela);
+
+    const labelsDespesas = detalhesDespesas.map(d => d.tipo);
+    const dataDespesas = detalhesDespesas.map(d => d.valorMensal);
+
+    if (graficoDividas) graficoDividas.destroy();
+    if (graficoDespesas) graficoDespesas.destroy();
+
+    graficoDividas = new Chart(ctxDividas, {
+      type: 'pie',
+      data: {
+        labels: labelsDividas,
+        datasets: [{
+          data: dataDividas,
+          backgroundColor: coresGrafico,
+          borderColor: '#000000',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        plugins: {
+          title: {
+            display: true,
+            text: 'Distribuição de Dívidas',
+            color: '#f5f5f5',
+            font: { size: 18, weight: 'bold' }
+          },
+          legend: { labels: { color: '#f5f5f5' } }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+      }
+    });
+
+    graficoDespesas = new Chart(ctxDespesas, {
+      type: 'pie',
+      data: {
+        labels: labelsDespesas,
+        datasets: [{
+          data: dataDespesas,
+          backgroundColor: coresGrafico,
+          borderColor: '#000000',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        plugins: {
+          title: {
+            display: true,
+            text: 'Distribuição de Despesas',
+            color: '#f5f5f5',
+            font: { size: 18, weight: 'bold' }
+          },
+          legend: { labels: { color: '#f5f5f5' } }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+      }
+    });
+  }
+
+  // Salvar dados no localStorage
+function salvarDadosUsuario() {
+  const usuario = localStorage.getItem("usuarioLogado");
+  const mesAno = document.getElementById("filtroMesAno")?.value;
+  if (!usuario || !mesAno) return;
+
+  const chave = `dados_${usuario}_${mesAno}`;
+  const dados = {
+    renda: document.getElementById("renda").value,
+    pagamento: document.getElementById("pagamento").value,
+    dividas: [],
+    despesas: []
+  };
+
+  document.querySelectorAll("#tabela-dividas tbody tr").forEach(tr => {
+    dados.dividas.push({
+      tipo: tr.querySelector(".tipo").value,
+      valorTotal: tr.querySelector(".valor-total").value,
+      parcelas: tr.querySelector(".parcelas").value
+    });
+  });
+
+  document.querySelectorAll("#tabela-despesas tbody tr").forEach(tr => {
+    dados.despesas.push({
+      tipo: tr.querySelector(".tipo").value,
+      valorMensal: tr.querySelector(".valor-mensal").value
+    });
+  });
+
+  localStorage.setItem(chave, JSON.stringify(dados));
+  listarHistoricosSalvos();
+}
+
+  // Carregar dados do usuário
+function carregarDadosUsuario() {
+  const usuario = localStorage.getItem("usuarioLogado");
+  const mesAno = document.getElementById("filtroMesAno")?.value;
+  if (!usuario || !mesAno) return;
+
+  const chave = `dados_${usuario}_${mesAno}`;
+  const dados = JSON.parse(localStorage.getItem(chave) || '{}');
+
+  // Sempre começa zerado (mesmo que não tenha dado salvo)
+  document.getElementById("renda").value = dados.renda || '';
+  document.getElementById("pagamento").value = dados.pagamento || '';
+
+  const tbodyDividas = document.querySelector("#tabela-dividas tbody");
+  const tbodyDespesas = document.querySelector("#tabela-despesas tbody");
+  tbodyDividas.innerHTML = '';
+  tbodyDespesas.innerHTML = '';
+
+  // Carrega apenas se existir algo salvo
+  if (dados.dividas && Array.isArray(dados.dividas)) {
+    dados.dividas.forEach(d => adicionarLinhaDivida(d.tipo, d.valorTotal, d.parcelas));
+  }
+  if (dados.despesas && Array.isArray(dados.despesas)) {
+    dados.despesas.forEach(d => adicionarLinhaDespesa(d.tipo, d.valorMensal));
+  }
+
+  analisar();
+  listarHistoricosSalvos();
+}
+
+function listarHistoricosSalvos() {
+  const usuario = localStorage.getItem("usuarioLogado");
+  const lista = document.getElementById("lista-historico");
+  if (!lista || !usuario) return;
+  lista.innerHTML = "";
+
+  Object.keys(localStorage).forEach(chave => {
+    if (chave.startsWith(`dados_${usuario}_`)) {
+      const mesAno = chave.replace(`dados_${usuario}_`, "");
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <button onclick="carregarHistorico('${mesAno}')" class="btn-mini">${formatarMesAno(mesAno)}</button>
+        <button onclick="excluirHistorico('${mesAno}')" class="btn-mini" style="background:red; color:white; margin-left: 5px;">🗑️</button>
+      `;
+      lista.appendChild(li);
+    }
+  });
+}
+function carregarHistorico(mesAno) {
+  document.getElementById("filtroMesAno").value = mesAno;
+  carregarDadosUsuario();
+}
+
+function excluirHistorico(mesAno) {
+  const usuario = localStorage.getItem("usuarioLogado");
+  if (!usuario || !mesAno) return;
+
+  const chave = `dados_${usuario}_${mesAno}`;
+  if (confirm(`Deseja realmente excluir os dados de ${formatarMesAno(mesAno)}?`)) {
+    localStorage.removeItem(chave);
+    listarHistoricosSalvos();
+    alert("Dados excluídos com sucesso.");
+  }
+}
+function formatarMesAno(str) {
+  const [ano, mes] = str.split("-");
+  const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  return `${meses[parseInt(mes) - 1]} de ${ano}`;
+}
+
+
+  // Exportar PDF
+function exportarPDF() {
+  const usuario = localStorage.getItem('usuarioLogado');
+  const mesAno = document.getElementById('filtroMesAno')?.value;
+  if (!usuario || !mesAno) return alert('Faça login antes de exportar.');
+
+  const chave = `dados_${usuario}_${mesAno}`;
+  const dados = JSON.parse(localStorage.getItem(chave) || '{}');
+  if (!dados) return alert('Sem dados para exportar.');
+
+  let html = `
+    <p><strong>👤 Usuário:</strong> ${usuario}</p>
+    <p><strong>💰 Renda Mensal:</strong> R$ ${parseFloat(dados.renda || 0).toFixed(2).replace('.', ',')}</p>
+    <p><strong>🎯 Meta de Economia:</strong> R$ ${parseFloat(dados.pagamento || 0).toFixed(2).replace('.', ',')}</p>
+
+    <h3 style="margin-top:20px; color:#333;">📌 Dívidas</h3>
+    <ul>`;
+  (dados.dividas || []).forEach(d => {
+    html += `<li>${d.tipo || 'Sem Tipo'}: R$ ${parseFloat(d.valorTotal || 0).toFixed(2).replace('.', ',')} em ${d.parcelas}x</li>`;
+  });
+  html += `</ul>`;
+
+  html += `
+    <h3 style="margin-top:20px; color:#333;">📌 Despesas Mensais</h3>
+    <ul>`;
+  (dados.despesas || []).forEach(d => {
+    html += `<li>${d.tipo || 'Sem Tipo'}: R$ ${parseFloat(d.valorMensal || 0).toFixed(2).replace('.', ',')}</li>`;
+  });
+  html += `</ul>`;
+
+  const resumo = document.getElementById('resumo')?.innerText || '';
+  const avaliacao = document.getElementById('avaliacao-onze')?.innerText || '';
+  const dicas = document.getElementById('dicas-financeiras')?.innerText || '';
+
+  html += `
+    <h3 style="margin-top:30px; color:#333;">📈 Resumo Financeiro</h3>
+    <pre style="white-space:pre-wrap;">${resumo}</pre>
+
+    <h3 style="color:#333;">💡 Avaliação</h3>
+    <p>${avaliacao}</p>
+
+    <h3 style="color:#333;">🔎 Dicas</h3>
+    <p>${dicas}</p>
+  `;
+
+  const cont = document.getElementById('conteudo-pdf');
+  const relatorio = document.getElementById('relatorio-pdf');
+  cont.innerHTML = html;
+
+  relatorio.classList.remove('hidden');
+  relatorio.style.display = 'block';
+
+  const opt = {
+    margin: 0.5,
+    filename: `painel-${usuario}-${mesAno}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().from(relatorio).set(opt).save().then(() => {
+    relatorio.classList.add('hidden');
+    relatorio.style.display = 'none';
+  });
+}
+
+
+  // ⚠️ Mostrar o relatório antes de gerar o PDF
+  relatorio.classList.remove('hidden');
+  relatorio.style.display = 'block';
+
+  const opt = {
+    margin: 0.5,
+    filename: `painel-${usuario}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().from(relatorio).set(opt).save().then(() => {
+    // 🔙 Esconde novamente após gerar
+    relatorio.classList.add('hidden');
+    relatorio.style.display = 'none';
+  });
+
+  // Auto salvar dados ao sair da página
+  window.addEventListener('beforeunload', salvarDadosUsuario);
+
+  // Se já estiver logado, mostrar painel direto
+  if (localStorage.getItem('usuarioLogado')) {
+    mostrarPainel();
+  }
+  // Atalhos: Enter para login e cadastro
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') {
+    const loginSection = document.getElementById('login-section');
+    if (loginSection && loginSection.style.display !== 'none') {
+      const usuarioLogin = document.getElementById('login-usuario').value.trim();
+      const senhaLogin = document.getElementById('login-senha').value.trim();
+      const usuarioCad = document.getElementById('cad-usuario').value.trim();
+      const senhaCad = document.getElementById('cad-senha').value.trim();
+
+      if (usuarioLogin || senhaLogin) {
+        login(); // se estiver tentando fazer login
+      } else if (usuarioCad || senhaCad) {
+        cadastrar(); // se estiver tentando cadastrar
+      }
+    }
+  }
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const inputMesAno = document.getElementById("filtroMesAno");
+  if (inputMesAno && !inputMesAno.value) {
+    const hoje = new Date();
+    const mes = (hoje.getMonth() + 1).toString().padStart(2, '0');
+    const ano = hoje.getFullYear();
+    inputMesAno.value = `${ano}-${mes}`;
+  }
+});
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log("✅ Service Worker registrado!"))
+      .catch(err => console.error("❌ Falha ao registrar o SW:", err));
+  }
+
+</script>
+</body>
+</html>
