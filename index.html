@@ -1,12 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
     <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js"></script>
 
- <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <!-- Firebase Config -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB52ErqMQGfL5eWbasN9_sv8zAcCOPsLR4",
+      authDomain: "cfi-smart.firebaseapp.com",
+      projectId: "cfi-smart",
+      storageBucket: "cfi-smart.firebasestorage.app",
+      messagingSenderId: "67048661406",
+      appId: "1:67048661406:web:b70ae7a0c9a8adfd36b68f"
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
+
   <style>
 @keyframes fadeIn {
   from {
@@ -320,25 +336,25 @@
   </div>
 
   <!-- LOGIN -->
-  <div id="login" class="login-container">
+  <div id="login-section" class="login-container">
     <h1>🔐 Painel Financeiro Inteligente</h1>
     <div class="input-group">
       <label for="login-usuario">👤 Usuário</label>
-      <input type="text" id="email" placeholder="Digite seu email" />
+      <input type="text" id="login-usuario" placeholder="Digite seu usuário" autocomplete="username" />
     </div>
 
     <div class="input-group">
       <label for="login-senha">🔒 Senha</label>
-      <input type="password" id="senha" placeholder="Digite sua senha" />
+      <input type="password" id="login-senha" placeholder="Digite sua senha" autocomplete="current-password" />
     </div>
 
-  <button class="btn" onclick="entrar()">Entrar</button>
-    <div style="margin-top: 20px;"></div>
-    <div class="g-recaptcha" data-sitekey="6LfrrYorAAAAAK4RZ53zO9HmHYCbuDGv-oE8npQx"></div>
+    <button class="btn" onclick="login()">Entrar</button>
     <div class="alerta" id="login-alerta"></div>
 
     <hr style="margin: 20px 0; border-color: #444;" />
+
     <h2 style="color:#ffffff">Cadastrar novo usuário</h2>
+
     <div class="input-group">
       <label for="cad-usuario">👤 Novo Usuário</label>
       <input type="text" id="cad-usuario" placeholder="Escolha um nome de usuário" autocomplete="username" />
@@ -351,6 +367,7 @@
     <button class="btn" onclick="cadastrar()">Cadastrar</button>
     <div class="alerta" id="cad-alerta"></div>
     <hr style="margin: 20px 0; border-color: #444;" />
+    <div class="g-recaptcha" data-sitekey="6LfrrYorAAAAAK4RZ53zO9HmHYCbuDGv-oE8npQx"></div>
   </div>
 
   <!-- PAINEL -->
@@ -404,83 +421,48 @@
   }
 
   // Login
+  function login() {
+    const usuario = document.getElementById('login-usuario').value.trim();
+    const senha = document.getElementById('login-senha').value.trim();
+    const alerta = document.getElementById('login-alerta');
 
-//Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyB52ErqMQGfL5eWbasN9_sv8zAcCOPsLR4",
-      authDomain: "cfi-smart.firebaseapp.com",
-      projectId: "cfi-smart",
-      storageBucket: "cfi-smart.firebasestorage.app",
-      messagingSenderId: "67048661406",
-      appId: "1:67048661406:web:b70ae7a0c9a8adfd36b68f"
-    };
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-  async function entrar() {
-    console.log("Botão entrar clicado!");
-
-    const email = document.getElementById('email').value.trim();
-    const senha = document.getElementById('senha').value.trim();
-
-    if (!email || !senha) {
-      alert("Por favor, preencha todos os campos.");
+    if (!usuario || !senha) {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Preencha usuário e senha para entrar.';
       return;
     }
 
-    // Verifica se grecaptcha está disponível
-    if (typeof grecaptcha === "undefined") {
-      alert("Erro ao carregar reCAPTCHA. Recarregue a página.");
-      return;
+    const usuarios = pegarUsuarios();
+    if (usuarios[usuario] && usuarios[usuario] === senha) {
+      alerta.className = 'alerta success';
+      alerta.innerText = 'Login realizado com sucesso!';
+      localStorage.setItem('usuarioLogado', usuario);
+      mostrarPainel();
+    } else {
+      alerta.className = 'alerta error';
+      alerta.innerText = 'Usuário ou senha incorretos.';
     }
-
-    const recaptchaToken = grecaptcha.getResponse();
-
-    if (!recaptchaToken) {
-      alert("Confirme que você não é um robô.");
-      return;
-    }
-
-    try {
-      const userCredential = await firebase.auth().signInWithEmailAndPassword(email, senha);
-      const user = userCredential.user;
-
-      localStorage.setItem("usuarioId", user.uid);
-      localStorage.setItem("usuarioEmail", user.email);
-
-      alert("Login realizado com sucesso!");
-      window.location.href = "painel.html";
-    } catch (error) {
-      console.error("Erro ao fazer login:", error);
-      alert("Erro ao fazer login: " + error.message);
-    }
-
-    grecaptcha.reset();
   }
-
 function resetarSenha() {
-  const email = document.getElementById("reset-email").value;
-  const recaptchaToken = grecaptcha.getResponse();
-
-  if (!recaptchaToken) {
-    alert("⚠️ Verifique o reCAPTCHA antes de continuar.");
+  const email = document.getElementById('reset-email').value;
+  if (!email) {
+    alert('Digite seu e-mail para redefinir a senha.');
     return;
   }
 
   auth.sendPasswordResetEmail(email)
     .then(() => {
-      alert("📧 Link de redefinição enviado! Verifique seu e-mail.");
-      grecaptcha.reset(); // limpa o reCAPTCHA
+      alert('📧 Um link para redefinir sua senha foi enviado para o seu e-mail.');
     })
     .catch(error => {
-      alert("Erro: " + error.message);
+      console.error(error);
+      alert('❌ Erro ao enviar e-mail: ' + error.message);
     });
 }
 
   // Mostrar painel financeiro
   function mostrarPainel() {
-    document.getElementById('login').style.display = 'none';
+    document.getElementById('login-section').style.display = 'none';
     const painel = document.getElementById('painel-section');
     painel.style.display = 'block';
 
@@ -1063,14 +1045,15 @@ function exportarPDF() {
   // Atalhos: Enter para login e cadastro
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Enter') {
-    const loginSection = document.getElementById('login');
+    const loginSection = document.getElementById('login-section');
     if (loginSection && loginSection.style.display !== 'none') {
-      const usuarioLogin = document.getElementById('email').value.trim();
-      const senhaLogin = document.getElementById('senha').value.trim();
+      const usuarioLogin = document.getElementById('login-usuario').value.trim();
+      const senhaLogin = document.getElementById('login-senha').value.trim();
       const usuarioCad = document.getElementById('cad-usuario').value.trim();
       const senhaCad = document.getElementById('cad-senha').value.trim();
+
       if (usuarioLogin || senhaLogin) {
-        entrar(); // se estiver tentando fazer login
+        login(); // se estiver tentando fazer login
       } else if (usuarioCad || senhaCad) {
         cadastrar(); // se estiver tentando cadastrar
       }
@@ -1093,21 +1076,6 @@ window.addEventListener("DOMContentLoaded", () => {
       .then(reg => console.log("✅ Service Worker registrado!"))
       .catch(err => console.error("❌ Falha ao registrar o SW:", err));
   }
-document.getElementById('loginLink').addEventListener('click', function (e) {
-  e.preventDefault();
-
-  fetch('auth.html')
-    .then(response => response.text())
-    .then(html => {
-      document.querySelector('.content').innerHTML = html;
-
-      // Agora que o conteúdo foi inserido, carregue o script do auth
-      const script = document.createElement('script');
-      script.src = 'js/auth.js';
-      document.body.appendChild(script);
-    });
-});
-
 
 </script>
 </body>
