@@ -536,6 +536,12 @@
             background: #005500;
             transform: scale(0.95);
         }
+
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .warning { color: #ffff00; }
+        .info { color: #00ccff; }
+        .command { color: #ffffff; }
     </style>
 </head>
 <body>
@@ -760,15 +766,16 @@
             restartButton.addEventListener('click', restartGame);
             winRestartButton.addEventListener('click', restartGame);
             
-            // Evento de comando para desktop
-            commandInput.addEventListener('keypress', function(e) {
+            // Evento de comando para desktop - CORRIGIDO
+            commandInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     processCommand(this.value);
                     this.value = '';
+                    e.preventDefault();
                 }
             });
             
-            // Eventos para controles móveis
+            // Eventos para controles móveis - CORRIGIDO
             mobileControls.forEach(btn => {
                 btn.addEventListener('click', function() {
                     const command = this.getAttribute('data-command');
@@ -776,12 +783,12 @@
                 });
             });
             
-            // Adicionar eventos aos nós
+            // Adicionar eventos aos nós - CORRIGIDO
             nodes.forEach((node, index) => {
                 node.addEventListener('click', () => selectNode(index));
             });
             
-            // Adicionar eventos às ferramentas
+            // Adicionar eventos às ferramentas - CORRIGIDO
             tools.forEach(tool => {
                 tool.addEventListener('click', function() {
                     const toolId = this.id;
@@ -789,7 +796,7 @@
                 });
             });
             
-            // Adicionar eventos às habilidades
+            // Adicionar eventos às habilidades - CORRIGIDO
             skills.forEach(skill => {
                 skill.addEventListener('click', function() {
                     const skillId = this.id.replace('skill', '').toLowerCase();
@@ -841,7 +848,7 @@
             gameLoop();
         }
 
-        // Loop principal do jogo (restante do código permanece igual)
+        // Loop principal do jogo
         function gameLoop() {
             if (!gameState.running) return;
             
@@ -1015,8 +1022,268 @@
             }
         }
 
-        // Restante das funções permanecem iguais ao código anterior
-        // (scanSystem, exploitSystem, crackFirewall, toggleStealth, showStatus, hackSystem, unlockSkill, randomEvent, updateUI, updateProgressBar, addTerminalMessage, addAlert, gameOver, victory, restartGame)
+        // Escanear sistema
+        function scanSystem() {
+            addTerminalMessage("Iniciando escaneamento...", "info");
+            setTimeout(() => {
+                const progress = Math.floor(Math.random() * 30) + 10;
+                gameState.nodeProgress[gameState.currentTarget] += progress;
+                updateProgressBar();
+                addTerminalMessage(`Escaneamento completo. Progresso: +${progress}%`, "success");
+                gameState.detectionLevel += 5;
+            }, 1000);
+        }
+
+        // Explorar sistema
+        function exploitSystem() {
+            if (!gameState.nodeFirewall[gameState.currentTarget]) {
+                addTerminalMessage("Explorando vulnerabilidades...", "info");
+                setTimeout(() => {
+                    const success = Math.random() * 100 < (40 + gameState.nodeProgress[gameState.currentTarget]);
+                    if (success) {
+                        addTerminalMessage("Exploração bem-sucedida! Sistema comprometido.", "success");
+                        hackSystem();
+                    } else {
+                        addTerminalMessage("Falha na exploração. Sistema contra-atacou.", "error");
+                        gameState.detectionLevel += 10;
+                    }
+                }, 1500);
+            } else {
+                addTerminalMessage("Erro: Firewall ativo. Quebre o firewall primeiro.", "error");
+            }
+        }
+
+        // Quebrar firewall
+        function crackFirewall() {
+            addTerminalMessage("Iniciando quebra de firewall...", "info");
+            setTimeout(() => {
+                const success = Math.random() * 100 < (25 + gameState.skills.brute * 15);
+                
+                if (success) {
+                    addTerminalMessage("Firewall comprometido com sucesso!", "success");
+                    gameState.nodeFirewall[gameState.currentTarget] = false;
+                    nodes[gameState.currentTarget].classList.add('firewall-breached');
+                    setTimeout(() => {
+                        nodes[gameState.currentTarget].classList.remove('firewall-breached', 'defended');
+                        nodes[gameState.currentTarget].classList.add('breached');
+                    }, 1000);
+                } else {
+                    addTerminalMessage("Falha ao quebrar firewall. Contra-medidas ativadas.", "error");
+                    gameState.detectionLevel += 20;
+                    addAlert("Tentativa de invasão de firewall detectada!");
+                }
+            }, 2000);
+        }
+
+        // Ativar/desativar modo furtivo
+        function toggleStealth() {
+            if (gameState.bitcoins < 1 && !gameState.stealthMode) {
+                addTerminalMessage("Bitcoins insuficientes para ativar modo furtivo.", "error");
+                return;
+            }
+            
+            gameState.stealthMode = !gameState.stealthMode;
+            
+            if (gameState.stealthMode) {
+                addTerminalMessage("Modo furtivo ativado. Consumindo bitcoins...", "success");
+            } else {
+                addTerminalMessage("Modo furtivo desativado.", "info");
+            }
+        }
+
+        // Mostrar status
+        function showStatus() {
+            addTerminalMessage("=== STATUS DO HACKER ===", "info");
+            addTerminalMessage(`Reputação: ${gameState.reputation}`, "info");
+            addTerminalMessage(`Bitcoins: ${gameState.bitcoins.toFixed(2)}`, "info");
+            addTerminalMessage(`Sistemas invadidos: ${gameState.hackedSystems}/${gameState.totalSystems}`, "info");
+            addTerminalMessage(`Nível de detecção: ${gameState.detectionLevel}%`, 
+                              gameState.detectionLevel > 70 ? "error" : 
+                              gameState.detectionLevel > 40 ? "warning" : "info");
+            addTerminalMessage(`Modo furtivo: ${gameState.stealthMode ? "Ativo" : "Inativo"}`, "info");
+        }
+
+        // Hackear sistema com sucesso
+        function hackSystem() {
+            gameState.hackedSystems++;
+            gameState.bitcoins += gameState.nodeDifficulty[gameState.currentTarget] / 10;
+            gameState.reputation += 20;
+            
+            // Recompensas especiais
+            if (gameState.currentTarget === 5) { // Servidor financeiro
+                gameState.bitcoins += 50;
+                addTerminalMessage("BÔNUS: +50 bitcoins do servidor financeiro!", "success");
+            }
+            
+            if (gameState.currentTarget === 4) { // Firewall central
+                addTerminalMessage("Firewall central comprometido! Todos os sistemas estão mais vulneráveis.", "success");
+                // Reduz dificuldade de outros sistemas
+                for (let i = 0; i < gameState.nodeDifficulty.length; i++) {
+                    if (i !== 4) gameState.nodeDifficulty[i] = Math.max(10, gameState.nodeDifficulty[i] - 10);
+                }
+            }
+            
+            updateUI();
+            
+            // Verificar vitória
+            if (gameState.hackedSystems >= gameState.totalSystems) {
+                victory();
+            }
+        }
+
+        // Desbloquear habilidade
+        function unlockSkill(skillId) {
+            const skillCosts = {
+                'brute': 0,
+                'sql': 10,
+                'ddos': 25,
+                'zeroday': 50
+            };
+            
+            const cost = skillCosts[skillId];
+            
+            if (gameState.skills[skillId]) {
+                addTerminalMessage(`Habilidade ${skillId} já está desbloqueada.`, "info");
+                return;
+            }
+            
+            if (gameState.bitcoins < cost) {
+                addTerminalMessage(`Bitcoins insuficientes. Necessário: ${cost}`, "error");
+                return;
+            }
+            
+            gameState.bitcoins -= cost;
+            gameState.skills[skillId] = true;
+            
+            const skillElement = document.getElementById(`skill${skillId.charAt(0).toUpperCase() + skillId.slice(1)}`);
+            skillElement.classList.remove('locked');
+            skillElement.classList.add('unlocked');
+            
+            addTerminalMessage(`Habilidade ${skillId.toUpperCase()} desbloqueada!`, "success");
+            
+            // Efeitos das habilidades
+            switch(skillId) {
+                case 'sql':
+                    addTerminalMessage("SQL Injection agora disponível. Aumenta chance de exploração em 15%.", "info");
+                    break;
+                case 'ddos':
+                    addTerminalMessage("DDoS Attack agora disponível. Reduz temporariamente a detecção.", "info");
+                    break;
+                case 'zeroday':
+                    addTerminalMessage("Zero-Day Exploit desbloqueado! Chance crítica de sucesso aumentada.", "info");
+                    break;
+            }
+            
+            updateUI();
+        }
+
+        // Eventos aleatórios
+        function randomEvent() {
+            const events = [
+                () => {
+                    addTerminalMessage("ALERTA: Sistema de detecção reforçado. Sua conexão está mais vulnerável.", "warning");
+                    gameState.detectionLevel += 10;
+                },
+                () => {
+                    addTerminalMessage("OPORTUNIDADE: Vulnerabilidade de dia zero encontrada!", "success");
+                    gameState.bitcoins += 5;
+                },
+                () => {
+                    addTerminalMessage("FALHA: Seu IP foi quase rastreado. Use modo furtivo!", "error");
+                    gameState.detectionLevel += 15;
+                },
+                () => {
+                    addTerminalMessage("BITCOIN: Transação anônima recebida.", "info");
+                    gameState.bitcoins += Math.floor(Math.random() * 10) + 1;
+                }
+            ];
+            
+            const randomEvent = events[Math.floor(Math.random() * events.length)];
+            randomEvent();
+        }
+
+        // Atualizar UI
+        function updateUI() {
+            reputationElement.textContent = gameState.reputation;
+            bitcoinsElement.textContent = gameState.bitcoins.toFixed(2);
+            hackedElement.textContent = `${gameState.hackedSystems}/${gameState.totalSystems}`;
+            updateProgressBar();
+        }
+
+        // Atualizar barras de progresso
+        function updateProgressBar() {
+            progressBars.forEach((bar, index) => {
+                bar.style.width = `${gameState.nodeProgress[index]}%`;
+            });
+        }
+
+        // Adicionar mensagem ao terminal
+        function addTerminalMessage(message, type) {
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            line.textContent = message;
+            
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Adicionar alerta
+        function addAlert(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-flash';
+            alert.textContent = message;
+            
+            alertsContainer.appendChild(alert);
+            alertsContainer.scrollTop = alertsContainer.scrollHeight;
+            
+            setTimeout(() => {
+                alert.classList.remove('alert-flash');
+            }, 3000);
+        }
+
+        // Fim de jogo
+        function gameOver() {
+            gameState.running = false;
+            document.getElementById('finalHacked').textContent = gameState.hackedSystems;
+            document.getElementById('finalRep').textContent = gameState.reputation;
+            gameOverMessage.classList.remove('hidden');
+        }
+
+        // Vitória
+        function victory() {
+            gameState.running = false;
+            document.getElementById('winRep').textContent = gameState.reputation;
+            document.getElementById('winBitcoins').textContent = gameState.bitcoins.toFixed(2);
+            winMessage.classList.remove('hidden');
+        }
+
+        // Reiniciar jogo
+        function restartGame() {
+            // Resetar nós
+            nodes.forEach(node => {
+                node.classList.remove('hacking', 'breached', 'defended');
+            });
+            
+            // Resetar habilidades
+            skills.forEach(skill => {
+                if (skill.id !== 'skillBrute') {
+                    skill.classList.add('locked');
+                    skill.classList.remove('unlocked');
+                }
+            });
+            
+            // Limpar terminal
+            terminal.innerHTML = `
+                <div class="terminal-line">> Reinicializando sistema...</div>
+                <div class="terminal-line">> Carregando módulos de segurança...</div>
+                <div class="terminal-line success">> Sistema pronto. Digite 'help' para comandos disponíveis.</div>
+            `;
+            
+            // Limpar alertas
+            alertsContainer.innerHTML = '<div class="alert">Sistema de detecção de intrusos ativado</div>';
+            
+            startGame();
+        }
 
         // Inicializar o jogo quando a página carregar
         window.addEventListener('load', init);
